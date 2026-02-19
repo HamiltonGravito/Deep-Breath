@@ -1,0 +1,31 @@
+{
+  "appTitle": {
+    "message": "🌿 Deep Breath",
+    "description": "Extension title"
+  },
+  "appDescription": {
+    "message": "Mindful browsing assistant that detects dopamine loops and helps you break free from endless scrolling on social media.",
+    "description": "Extension description"
+  },
+  "subtitle": {
+    "message": "Choose your intensity"
+  },
+  "levelZen": {
+    "message": "Zen"
+  },
+  "levelZenDesc": {
+    "message": "Gentle reminder"
+  },
+  "levelMedium": {
+    "message": "Medium"
+  },
+  "levelMediumDesc": {
+    "message": "Healthy balance"
+  },
+  "levelHard": {
+    "message": "Full Focus"
+  },
+  "levelHardDesc": {
+    "message": "Immediate intervention"
+  }
+}

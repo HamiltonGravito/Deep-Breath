@@ -1,0 +1,6 @@
+# Ignorar arquivos do sistema e pastas de backup
+.DS_Store
+Thumbs.db
+node_modules/
+*.zip
+.vscode/

@@ -1,0 +1,31 @@
+{
+  "appTitle": {
+    "message": "🌿 Deep Breath",
+    "description": "Extension title"
+  },
+  "appDescription": {
+    "message": "Assistente de navegação consciente que detecta loops de dopamina e ajuda você a se libertar da rolagem infinita nas redes sociais.",
+    "description": "Extension description"
+  },
+  "subtitle": {
+    "message": "Escolha sua intensidade"
+  },
+  "levelZen": {
+    "message": "Zen"
+  },
+  "levelZenDesc": {
+    "message": "Lembrete gentil"
+  },
+  "levelMedium": {
+    "message": "Médio"
+  },
+  "levelMediumDesc": {
+    "message": "Equilíbrio saudável"
+  },
+  "levelHard": {
+    "message": "Foco Total"
+  },
+  "levelHardDesc": {
+    "message": "Intervenção imediata"
+  }
+}
