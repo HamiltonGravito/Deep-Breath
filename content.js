@@ -15,9 +15,11 @@ let calmAudio = new Audio(chrome.runtime.getURL('calm.mp3'));
 calmAudio.loop = true;
 calmAudio.volume = 1.0;
 
+// Valores iniciais (Padrão: Médio)
 let settings = {
   scrollLimit: 4000,
   shortsLimit: 4,
+  replayLimit: 3,
   videoSpeed: 0.5,
   level: 'medium'
 };
@@ -35,11 +37,11 @@ chrome.storage.onChanged.addListener((changes) => {
 function updateSettings(level) {
   settings.level = level;
   if (level === 'zen') {
-    settings = { scrollLimit: 8000, shortsLimit: 8, videoSpeed: 0.8, level: 'zen' };
+    settings = { scrollLimit: 10000, shortsLimit: 10, replayLimit: 7, videoSpeed: 0.8, level: 'zen' };
   } else if (level === 'medium') {
-    settings = { scrollLimit: 4000, shortsLimit: 4, videoSpeed: 0.5, level: 'medium' };
+    settings = { scrollLimit: 4000, shortsLimit: 4, replayLimit: 3, videoSpeed: 0.5, level: 'medium' };
   } else if (level === 'hard') {
-    settings = { scrollLimit: 2000, shortsLimit: 2, videoSpeed: 0.2, level: 'hard' };
+    settings = { scrollLimit: 1000, shortsLimit: 1, replayLimit: 1, videoSpeed: 0.2, level: 'hard' };
   }
 }
 
@@ -54,9 +56,6 @@ function muteAllVideos() {
 
         if (settings.level === 'hard') {
           video.pause();
-          if (!video.paused) {
-            video.pause();
-          }
         }
       }
     } catch (e) { }
@@ -79,23 +78,16 @@ function muteAllVideos() {
 
 function activateTrance() {
   if (isInTrance) return;
-
   isInTrance = true;
   document.body.classList.add('breathing-active');
-
-  if (settings.level === 'hard') {
-    document.body.style.overflow = 'hidden';
-  }
-
+  if (settings.level === 'hard') document.body.style.overflow = 'hidden';
   calmAudio.play().catch(() => { });
-
   muteAllVideos();
   muteInterval = setInterval(muteAllVideos, 200);
 }
 
 function deactivateTrance() {
   if (!isInTrance) return;
-
   isInTrance = false;
   document.body.classList.remove('breathing-active');
   document.body.style.overflow = 'auto';
@@ -110,9 +102,7 @@ function deactivateTrance() {
       video.muted = false;
       video.volume = 1.0;
       video.playbackRate = 1.0;
-      if (settings.level === 'hard') {
-        video.play().catch(() => { });
-      }
+      if (settings.level === 'hard') video.play().catch(() => { });
     } catch (e) { }
   });
 
@@ -125,12 +115,9 @@ function deactivateTrance() {
       try {
         if (typeof ytPlayer.unMute === 'function') ytPlayer.unMute();
         if (typeof ytPlayer.setVolume === 'function') ytPlayer.setVolume(100);
-        if (settings.level === 'hard' && typeof ytPlayer.playVideo === 'function') {
-          ytPlayer.playVideo();
-        }
+        if (settings.level === 'hard' && typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
       } catch (e) { }
     };
-
     forceRestore();
     setTimeout(forceRestore, 150);
   }
@@ -138,15 +125,18 @@ function deactivateTrance() {
   calmAudio.pause();
   calmAudio.currentTime = 0;
 
+  // RESETS PARA EVITAR REATIVAÇÃO IMEDIATA
   scrollPositions = [];
   urlChanges = [];
   replayCount = 0;
+  shortsCount = 0;
+  lastShortChangeTime = 0;
+  lastVideoTime = 0;
+  clearTimeout(shortsResetTimer);
 }
 
 document.addEventListener('click', () => {
-  if (isInTrance) {
-    deactivateTrance();
-  }
+  if (isInTrance) deactivateTrance();
 }, true);
 
 function attachVideoListeners() {
@@ -154,25 +144,21 @@ function attachVideoListeners() {
   videos.forEach(video => {
     if (!videoListenersAttached.has(video)) {
       videoListenersAttached.add(video);
-
       video.addEventListener('timeupdate', () => {
         if (isInTrance) return;
-
         const currentTime = video.currentTime;
         const currentUrl = location.href;
 
+        // Detecção de Replay usando o novo limite
         if (currentUrl === lastUrl && currentTime < lastVideoTime && (lastVideoTime - currentTime) > 2) {
           replayCount++;
-          if (replayCount >= 5) {
-            activateTrance();
-          }
+          if (replayCount >= settings.replayLimit) activateTrance();
         }
 
         if (currentUrl !== lastUrl) {
           replayCount = 0;
           lastUrl = currentUrl;
         }
-
         lastVideoTime = currentTime;
       });
     }
@@ -182,6 +168,7 @@ function attachVideoListeners() {
 setInterval(attachVideoListeners, 500);
 
 function handleShortChange() {
+  if (isInTrance) return;
   const now = Date.now();
   if (lastShortChangeTime && (now - lastShortChangeTime < 30000)) {
     shortsCount++;
@@ -196,7 +183,6 @@ function handleShortChange() {
     shortsCount = 0;
     lastShortChangeTime = 0;
   }, 30000);
-
   resetInactivityTimer();
 }
 
@@ -206,39 +192,29 @@ function resetInactivityTimer() {
 }
 
 window.addEventListener('scroll', () => {
+  if (isInTrance) return;
   const now = Date.now();
   const currentScroll = window.scrollY;
 
   scrollPositions.push({ y: currentScroll, time: now });
-  scrollPositions = scrollPositions.filter(pos => now - pos.time <= 20000);
+  scrollPositions = scrollPositions.filter(pos => now - pos.time <= 15000);
 
   if (scrollPositions.length > 1) {
     const oldest = scrollPositions[0];
     const scrollDiff = Math.abs(currentScroll - oldest.y);
-
-    if (scrollDiff > settings.scrollLimit) {
-      activateTrance();
-    }
+    if (scrollDiff > settings.scrollLimit) activateTrance();
   }
   resetInactivityTimer();
 }, { passive: true });
 
 const observer = new MutationObserver(() => {
   if (location.href !== lastUrl) {
-    const isShorts = location.href.includes('/shorts/');
-
+    const isShorts = location.href.includes('/shorts/') || location.href.includes('/reels/');
     replayCount = 0;
     lastVideoTime = 0;
     lastUrl = location.href;
-
     if (isShorts) handleShortChange();
-
-    if (isInTrance) {
-      document.body.classList.add('breathing-active');
-      muteAllVideos();
-    }
   }
-
   attachVideoListeners();
 });
 
